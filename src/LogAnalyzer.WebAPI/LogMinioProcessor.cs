@@ -12,6 +12,9 @@ namespace LogAnalyzer.WebAPI
         private readonly IOptions<LogMinioProcessorSettings> _options;
         private readonly IMinioClient _minioClient;
         private readonly IServiceProvider _serviceProvider;
+
+
+        //переделать на запись в бд
         private readonly HashSet<string> _processedFiles = new HashSet<string>();
 
         public LogMinioProcessor(ILogger<LogMinioProcessor> logger,
@@ -39,6 +42,7 @@ namespace LogAnalyzer.WebAPI
                     {
                         await ReadAndProcessFileAsync(logFile, stoppingToken);
                         _processedFiles.Add(logFile);
+                      
                         _logger.LogInformation("Файл обработан: {logFile}", logFile);
                     }
                 }
@@ -46,6 +50,9 @@ namespace LogAnalyzer.WebAPI
 
             await Task.Delay(TimeSpan.FromSeconds(_options.Value.TimeInterval), stoppingToken);
         }
+
+       
+
 
         private async Task PutFilesInDirectoryAndDeleteFromBucket(CancellationToken stoppingToken)
         {

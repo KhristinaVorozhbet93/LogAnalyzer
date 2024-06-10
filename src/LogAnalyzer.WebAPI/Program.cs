@@ -6,6 +6,8 @@ using LogAnalyzer.Infrastructure.LogFilterService;
 using LogAnalyzer.Infrastructure.LogFileReaderService;
 using LogAnalyzer.Domain.Interfaces;
 using LogAnalyzer.Domain.LogRecord;
+using Microsoft.AspNetCore.Mvc;
+using System.Runtime.CompilerServices;
 
 
 namespace LogAnalyzer.WebAPI
@@ -71,10 +73,14 @@ namespace LogAnalyzer.WebAPI
                 .WithSSL(false)
                 .Build();
             });
+            
 
+            builder.Services.AddSingleton<LogFileProcessor>();
+            builder.Services.AddSingleton<ILogFileProcessorService>(
+                sp => sp.GetRequiredService<LogFileProcessor>());
+            builder.Services.AddHostedService(sp => sp.GetRequiredService<LogFileProcessor>());
 
-            //builder.Services.AddHostedService<LogFileProcessor>();
-            builder.Services.AddHostedService<LogMinioProcessor>();
+            //builder.Services.AddHostedService<LogMinioProcessor>();
 
             var app = builder.Build();
 
@@ -90,22 +96,22 @@ namespace LogAnalyzer.WebAPI
 
             app.MapControllers();
 
-
-            app.MapGet("/get_status", async (ILogReaderService service) =>
+        
+            app.MapGet("/get_status", async ([FromServices] LogFileProcessor logService) =>
             {
-                await service.ReadFromFileAsync("C:\\Users\\Христина\\Desktop\\Логи\\FileLog.txt", default);
-
+                var status = logService.GetStatus();
+                Console.WriteLine($"Прогресс: {status.Progress}; Осталось файлов: {status.ProcessedFiles}");
             });
 
-            app.MapPost("/stop_handler", async () =>
+            app.MapPost("/stop_handler", async ([FromServices] LogFileProcessor logService) =>
             {
-
-
+                logService.Stop();
+              
             });
 
-            app.MapPost("/start_handler", async () =>
+            app.MapPost("/start_handler", async ([FromServices] LogFileProcessor logService) =>
             {
-
+                logService.Start();
 
             });
 
